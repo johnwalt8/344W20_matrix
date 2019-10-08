@@ -4,7 +4,6 @@
 # take and MxN matrix and return an 1xN row vector,
 # where the first element is the mean of column one,
 # the second element is the mean of column two, and so on
-temp="tempfile"
 
 function dims(){
     rows=`wc -l < $1`
