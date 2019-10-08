@@ -31,7 +31,7 @@ dims $2
 
 if [[ $leftRows -ne $rows || $leftColumns -ne $columns ]]
 then
-    echo "invalid matrices: adding matrices requires that the two matrices be the same dimensions"
+    echo "invalid matrices: adding matrices requires that the two matrices be the same dimensions" >&2
     exit 13
 fi
 

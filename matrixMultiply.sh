@@ -31,7 +31,7 @@ dims $2
 
 if [[ $leftColumns -ne $rows ]]
 then
-    echo "invalid matrices: multipying matrices requires that number of columns in the first matrix is equal to the number of rows in the second matrix"
+    echo "invalid matrices: multipying matrices requires that number of columns in the first matrix is equal to the number of rows in the second matrix" >&2
     exit 13
 fi
 
