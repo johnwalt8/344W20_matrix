@@ -51,9 +51,3 @@ do
     done
     printf "\n"
 done
-
-# for (( i=1; i<=$columns; i=i+1))
-# do
-#     field=$( echo $row | cut -d' ' -f$i )
-#     echo "i: $i, field: $field"
-# done
