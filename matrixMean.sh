@@ -5,7 +5,7 @@
 # where the first element is the mean of column one,
 # the second element is the mean of column two, and so on
 
-function dims(){
+dims(){
     rows=`wc -l < $1`
     total=`wc -w < $1`
     columns=`expr $total / $rows`
@@ -23,13 +23,13 @@ dims $1
 
 for (( i=1; i<=$columns; i=i+1))
 do
-    rowSum=0
+    columnSum=0
     column=$(cut -f"$i" $1 | paste -s)
     for j in $column
     do
-        rowSum=`expr $rowSum + $j`
+        columnSum=`expr $columnSum + $j`
     done
-    mean=$((($rowSum + ($columns/2)*( ($rowSum>0)*2-1 )) / $columns))
+    mean=$(( ($columnSum + ($rows/2)*( ($columnSum>0)*2-1 )) / $rows ))
     printf "%d" $mean
     if [ $i -ne $columns ]
     then
