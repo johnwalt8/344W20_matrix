@@ -1,6 +1,12 @@
+# matrixDims.sh
+#!/bin/bash
+
 # print the dimensions of the matrix as the number of rows,
 # followed by a space, then the number of columns. 
 tempFileName="tempfile$$"
+
+trap "rm -f $tempFileName" EXIT
+trap "echo ' SIGNAL received: deleting temp file then exiting'; rm -f $tempFileName; exit 13" INT HUP TERM
 
 if [[ $# == 1 ]]
 then
@@ -18,22 +24,18 @@ then
         subjectFile=$tempFileName
 else
         echo "invalid number of arguments" >&2
-        rm -f "$tempFileName"
         exit 13
 fi      
 
 rows=`wc -l < $subjectFile`
 total=`wc -w < $subjectFile`
-columns=`expr $total / $rows`
-decColumns=$(bc <<< "scale=2;$total / $rows")
-intColumns=$(bc <<< "scale=2;$columns / 1")
+columns=`expr $total / $rows` # bash integer math rounds down
+columnsRoundedUp=$(( ($total + ($rows-1)) / $rows ))
 
-if [[ $intColumns != $decColumns ]]
+if [[ $columns != $columnsRoundedUp ]]
 then
         echo "invalid matrix: not all rows the same length" >&2
         exit 13
 fi
  
 echo "$rows $columns"
-
-rm -f "$tempFileName"

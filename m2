@@ -1,4 +1,1 @@
-2	-6	3	-5	7
--7	3	5	4	0
--2	0	-3	-2
--7	6	2	-5	6
+invalid number of arguments
