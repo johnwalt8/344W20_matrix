@@ -151,8 +151,7 @@ fi
 case $1 in
     dims|transpose|mean)
         case $# in
-            1)  echo "enter a tab-delimited matrix, then hit CTRL+D:"
-                cat > $TMP
+            1)  cat > $TMP
                 subjectFile=$TMP
                 ;;
             2)  if [[ -r $2 ]]
