@@ -28,14 +28,14 @@ function dims(){
     total=0
     columns=0
     columnsRoundedUp=0
-    rows=`wc -l < $1`
+    rows=$( wc -l < $1 )
     if [[ $rows == 0 ]]
     then
         echo "file is empty" >&2
         exit 13
     fi
-    total=`wc -w < $1`
-    columns=`expr $total / $rows` # bash integer math rounds down
+    total=$( wc -w < $1 )
+    columns=$(( $total / $rows )) # bash integer math rounds down
     columnsRoundedUp=$(( ($total + ($rows-1)) / $rows ))
 
     if [[ $columns != $columnsRoundedUp ]]
@@ -61,7 +61,7 @@ function mean(){
         column=$(cut -f"$i" $1 | paste -s)
         for j in $column
         do
-            columnSum=`expr $columnSum + $j`
+            columnSum=$(( $columnSum + $j ))
         done
         mean=$(( ($columnSum + ($rows/2)*( ($columnSum>0)*2-1 )) / $rows ))
         printf "%d" $mean
