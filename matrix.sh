@@ -3,7 +3,9 @@
 # matrix
 # Walter Johnson: johnwalt@oregonstate.edu
 # CS344 OPERATING SYSTEMS I
-# Fall 2019
+# Winter 2020 
+
+# Based on code written by Walter for CS344 Fall 2019 with permission from Bram Lewis.  
 
 # calculates basic matrix operations: dimensions, transpose, mean vector, add, multiply
 #   input: matrix - whole number values separated by tabs into a rectangular matrix
@@ -20,141 +22,173 @@
 #       arguments: two file paths
 TMP="tempfile$$"
 
-trap "rm -f $TMP" EXIT
+trap "rm -f $TMP" EXIT # removes temporary file at any exit
 trap "echo ' SIGNAL received: deleting temp file then exiting'; rm -f $TMP; exit 13" INT HUP TERM
 
-function dims(){
-    rows=0
-    total=0
-    columns=0
-    columnsRoundedUp=0
-    rows=$( wc -l < $1 )
-    if [[ $rows == 0 ]]
+# matrixDimensions - determines number of rows and columns in a rectangular matrix, 
+#   saves values in variables "rows" and "columns"
+# USE: matrixDimensions [MATRIX_FILE_PATH]
+function matrixDimensions(){
+    numberOfRows=0          # global variable used throughout "matrix"
+    totalNumElements=0      # total number of elements (integers) in matrix
+    numberOfColumns=0       # global variable used throughout "matrix"
+    columnsRoundedUp=0      # must be the same as "columns" for a valid matrix
+
+    numberOfRows=$( wc -l < $1 )    # number of rows in file
+    if [[ $numberOfRows == 0 ]]
     then
         echo "file is empty" >&2
         exit 13
     fi
-    total=$( wc -w < $1 )
-    columns=$(( $total / $rows )) # bash integer math rounds down
-    columnsRoundedUp=$(( ($total + ($rows-1)) / $rows ))
+    totalNumElements=$( wc -w < $1 )   # number of "words" in file (number of elements in matrix)
+    numberOfColumns=$(( $totalNumElements / $numberOfRows )) # bash integer math rounds down
+    columnsRoundedUp=$(( ($totalNumElements + ($numberOfRows-1)) / $numberOfRows ))
 
-    if [[ $columns != $columnsRoundedUp ]]
+    if [[ $numberOfColumns != $columnsRoundedUp ]]
     then
             echo "invalid matrix: not all rows the same length" >&2
             exit 13
     fi
 }
 
-function transpose(){
-    dims $1
-    for (( i=1; i<=$columns; i=i+1))
+# transposeMatrix - reflects the elements of the matrix along the main diagonal, 
+#   that is, first row becomes first column, second row becomes second column, and so on
+# USE: transposeMatrix [MATRIX_FILE_PATH]
+function transposeMatrix(){
+    matrixDimensions $1  # global "numberOfColumns" variable is used in following for loop
+
+    for (( i=1; i<=$numberOfColumns; i=i+1))
     do
-        cut -f"$i" $1 | paste -s
-    done
+        cut -f"$i" $1 | paste -s        # takes "i"th field (element) of EVERY line,
+    done                                #   writes as TAB (default) deliminated line
 }
 
-function mean(){
-    dims $1
-    for (( i=1; i<=$columns; i=i+1))
+# matrixMean - prints mean of each column of a matrix in a single row such that the first element
+#   of the row is mean of the first column of the matrix, and so on
+# USE: matrixMean [MATRIX_FILE_PATH]
+function matrixMean(){
+    matrixDimensions $1  # global "numberOfColumns" variable is used in following for loop
+
+    for (( i=1; i<=$numberOfColumns; i=i+1))
     do
-        columnSum=0
-        column=$(cut -f"$i" $1 | paste -s)
-        for j in $column
+        columnElementsSum=0
+        column=$(cut -f"$i" $1 | paste -s)  # elements of column "i" as a TAB delimited line
+
+        for element in $column
         do
-            columnSum=$(( $columnSum + $j ))
+            columnElementsSum=$(( $columnElementsSum + $element ))
         done
-        mean=$(( ($columnSum + ($rows/2)*( ($columnSum>0)*2-1 )) / $rows ))
+
+        mean=$(( ($columnElementsSum + ($numberOfRows/2)*( ($columnElementsSum>0)*2-1 )) / $numberOfRows )) # ***.5 values rounded away from zero as bash integer math rounds down
         printf "%d" $mean
-        if [ $i -ne $columns ]
+
+        if [ $i -ne $numberOfColumns ] # if it is not the last element
         then
             printf "\t"
         fi
     done
-    printf "\n"
+    printf "\n" # after the last element
 }
 
-function add(){
-    dims $1
+# addMatrices - takes two matrices of the same dimensions and adds corresponding elements
+#   to create a matrix of the same dimensions
+# USE: addMatrices [FIRST_MATRIX_FILE_PATH] [SECOND_MATRIX_FILE_PATH]
+function addMatrices(){
+    matrixDimensions $1 # determines number of rows and columns of first matrix for comparison
 
-    leftRows=$rows
-    leftColumns=$columns
+    firstMatrixRows=$numberOfRows
+    firstMatrixColumns=$numberOfColumns
 
-    dims $2
+    matrixDimensions $2
 
-    if [[ $leftRows -ne $rows || $leftColumns -ne $columns ]]
+    # matrices must have the same dimensions for matrix addition
+    if [[ $firstMatrixRows -ne $numberOfRows || $firstMatrixColumns -ne $numberOfColumns ]]
     then
         echo "invalid matrices: adding matrices requires that the two matrices be the same dimensions" >&2
         exit 13
     fi
 
-    for (( i=1; i<=$rows; i=i+1))
+    # matrix addition - add corresponding elements
+    for (( i=1; i<=$numberOfRows; i=i+1)) # for each row
     do
-        lRow=$( cat $1 | tail -n+$i | head -n1 )
-        rRow=$( cat $2 | tail -n+$i | head -n1 )
-        for (( j=1; j<=$columns; j=j+1))
+        rowFirstMatrix=$( cat $1 | tail -n+$i | head -n1 ) # "i"th row
+        rowSecondMatrix=$( cat $2 | tail -n+$i | head -n1 )
+
+        for (( j=1; j<=$numberOfColumns; j=j+1)) # for each element of the row
         do
-            lField=$( echo $lRow | cut -d' ' -f$j )
-            rField=$( echo $rRow | cut -d' ' -f$j )
-            printf "%d" "$(( $lField + $rField ))"
-            if [ $j -ne $columns ]
+            elementFirstMatrix=$( echo $rowFirstMatrix | cut -d' ' -f$j ) # "j"th element
+            elementSecondMatrix=$( echo $rowSecondMatrix | cut -d' ' -f$j )
+
+            printf "%d" "$(( $elementFirstMatrix + $elementSecondMatrix ))"
+
+            if [ $j -ne $numberOfColumns ] # if not the last element
             then
                 printf "\t"
             fi
         done
-        printf "\n"
+        printf "\n" # after the last element of reach row
     done
 }
 
-function multiply(){
-    dims $1
+# multiplyMatrices - takes MxN and NxP matrices and produces MxP matrix with matrix multiplication
+# USE: multiplyMatrices [FIRST_MATRIX_FILE_PATH] [SECOND_MATRIX_FILE_PATH]
+function multiplyMatrices(){
+    matrixDimensions $1 # determines number of rows and columns of first matrix for comparison
 
-    leftRows=$rows
-    leftColumns=$columns
+    firstMatrixRows=$numberOfRows
+    firstMatrixColumns=$numberOfColumns
 
-    dims $2
+    matrixDimensions $2
 
-    if [[ $leftColumns -ne $rows ]]
+    # number of columns of first matrix must equal number of rows of second matrix
+    if [[ $firstMatrixColumns -ne $numberOfRows ]]
     then
         echo "invalid matrices: multipying matrices requires that number of columns in the first matrix is equal to the number of rows in the second matrix" >&2
         exit 13
     fi
 
-    for (( i=1; i<=$leftRows; i=i+1))
+    # matrix multiplication - dot product of corresponding row from first matrix and column from second matrix
+    for (( i=1; i<=$firstMatrixRows; i=i+1)) # for each row of the first matrix
     do
-        lRow=$( cat $1 | tail -n+$i | head -n1 )
-        for (( j=1; j<=$columns; j=j+1))
+        rowFirstMatrix=$( cat $1 | tail -n+$i | head -n1 )
+
+        for (( j=1; j<=$numberOfColumns; j=j+1)) # for each column of the second matrix
         do
             dotProduct=0
-            rColumn=$(cut -f"$j" $2 | paste -s)
-            for (( k=1; k<=$leftColumns; k=k+1))
+            columnSecondMatrix=$(cut -f"$j" $2 | paste -s)
+
+            for (( k=1; k<=$firstMatrixColumns; k=k+1)) # for each element of the row of the first matrix
             do
-                lField=$( echo $lRow | cut -d' ' -f$k )
-                rField=$( echo $rColumn | cut -d' ' -f$k )
-                dotProduct=$(( $dotProduct+($lField*$rField) ))
+                elementFirstMatrix=$( echo $rowFirstMatrix | cut -d' ' -f$k ) # "k"th element
+                elementSecondMatrix=$( echo $columnSecondMatrix | cut -d' ' -f$k )
+                dotProduct=$(( $dotProduct+($elementFirstMatrix*$elementSecondMatrix) ))
             done
             printf "%d" "$dotProduct"
-            if [ $j -ne $columns ]
+
+            if [ $j -ne $numberOfColumns ] # if not the last element of the row
             then
                 printf "\t"
             fi
         done
-        printf "\n"
+        printf "\n" # after the last element of the row
     done
 }
 
-if [[ $# -gt 3 || $# -lt 1 ]]
+if [[ $# -gt 3 || $# -lt 1 ]] # must be 1, 2, or 3 arguments
 then
     echo "invalid number of arguments" >&2
     exit 13
 fi
 
-case $1 in
+case $1 in # first argument should be the operation
     dims|transpose|mean)
-        case $# in
-            1)  cat > $TMP
+        case $# in # for these operations, there should be 0 or 1 matrices
+            1)  # zero matrices provided, look to stdin
+                cat > $TMP
                 subjectFile=$TMP
                 ;;
-            2)  if [[ -r $2 ]]
+            2)  # one matrix file provided, make sure it is readable
+                if [[ -r $2 ]]
                 then
                     subjectFile=$2
                 else
@@ -166,13 +200,13 @@ case $1 in
                 exit 13
                 ;;
         esac
-        case $1 in
-            dims)       dims $subjectFile
-                        echo "$rows $columns"
+        case $1 in # use the proper function for the operation specified
+            dims)       matrixDimensions $subjectFile
+                        echo "$numberOfRows $numberOfColumns"
                         ;;
-            transpose)  transpose $subjectFile
+            transpose)  transposeMatrix $subjectFile
                         ;;
-            mean)       mean $subjectFile
+            mean)       matrixMean $subjectFile
                         ;;
             *)          echo "something, somewhere, went just a little bit wrong: A" >&2
                         ;;
@@ -184,13 +218,13 @@ case $1 in
             echo "this operation requires matrices as the second and third arguments" >&2
             exit 13
         fi
-        if [[ -r $2 && -r $3 ]]
+        if [[ -r $2 && -r $3 ]] # check that both files are readable
         then
             case $# in
-                3)  case $1 in
-                        add)        add $2 $3
+                3)  case $1 in # use the proper function for the operation specified
+                        add)        addMatrices $2 $3
                                     ;;
-                        multiply)   multiply $2 $3
+                        multiply)   multiplyMatrices $2 $3
                                     ;;
                         *)          echo "something, somewhere, went just a little bit wrong: B" >&2
                                     ;;
@@ -205,8 +239,8 @@ case $1 in
             exit 13
         fi
         ;;
-    *)
-        echo "invalid operation" >&2
+    *) # first argument is not one of the five valid operations
+        echo "invalid operation" >&2 
         exit 13
         ;;
 esac
